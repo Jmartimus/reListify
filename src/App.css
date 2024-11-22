@@ -1,0 +1,162 @@
+@font-face {
+  font-family: JetBrains Mono;
+  src: url(JetBrainsMono-Bold.woff2);
+}
+
+html {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  margin: 0;
+  background: no-repeat url('listify-background.jpg');
+  background-size: cover;
+  background-position: center;
+  font-family: "JetBrains Mono", monospace;
+}
+
+button {
+  align-items: center;
+  appearance: none;
+  background-color: #8B7D71;
+  border-radius: 4px;
+  border-width: 0;
+  box-shadow: rgba(45, 35, 66, 0.4) 0 2px 4px, rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #D6D6E7 0 -3px 0 inset;
+  box-sizing: border-box;
+  color: #F4F1EC;
+  cursor: pointer;
+  display: inline-flex;
+  font-family: "JetBrains Mono", monospace;
+  height: 48px;
+  justify-content: center;
+  line-height: 1;
+  list-style: none;
+  margin-top: 16px;
+  overflow: hidden;
+  padding-left: 16px;
+  padding-right: 16px;
+  position: relative;
+  text-align: left;
+  text-decoration: none;
+  transition: box-shadow .15s, transform .15s;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  white-space: nowrap;
+  will-change: box-shadow, transform;
+  font-size: 18px;
+  width: 90%;
+}
+
+button:focus {
+  box-shadow: #D6D6E7 0 0 0 1.5px inset, rgba(45, 35, 66, 0.4) 0 2px 4px, rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #D6D6E7 0 -3px 0 inset;
+}
+
+button:hover {
+  box-shadow: rgba(45, 35, 66, 0.4) 0 4px 8px, rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #D6D6E7 0 -3px 0 inset;
+  transform: translateY(-2px);
+}
+
+button:active {
+  box-shadow: #D6D6E7 0 3px 7px inset;
+  transform: translateY(2px);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+  transform: none;
+  box-shadow: none;
+}
+
+#outerContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #F4F1EC;
+  width: 350px;
+  height: 275px;
+  border-radius: 12px;
+  border: 4px solid #8B7D71;
+}
+
+#status {
+  background-color: #F4F1EC;
+  color: #3D3D3D;
+  border: 4px solid #8B7D71;
+  border-radius: 0 0 4px 4px;
+  height: 80px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+#loginForm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 90%;
+  height: 100%;
+}
+
+h2 {
+  font-size: 28px;
+  color: #3D3D3D;
+  font-family: "JetBrains Mono", monospace;
+  margin-bottom: 16px;
+}
+
+#loginForm input {
+  margin-bottom: 10px;
+  padding: 8px;
+  font-size: 16px;
+  font-family: "JetBrains Mono", monospace;
+  width: 84%;
+  border-radius: 4px;
+  background-color: #FAFBF4;
+  color: #3D3D3D;
+}
+
+#listMakerControls {
+  text-align: center;
+  align-items: center;
+  flex-direction: column;
+  height: 100%;
+  width:100%;
+}
+
+#listMakerControls h2 {
+  margin-bottom: 4px;
+}
+
+#statusContainer {
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  padding-right: 36px;
+  padding-left: 36px;
+  color: #FAFBF4;
+}
+
+p#statusTitle {
+  background-color: #8B7D71; 
+}
+
+#authStatus {
+  color: red;
+  margin-top: 10px;
+}
+
+p {
+  margin: 0;
+  padding: 6px 0;
+  background-color: #FAFBF4;
+  border-radius: 4px 4px 0 0;
+}
+
+button#listMakerButton {
+  margin-top: 0;
+  width:100%;
+}
