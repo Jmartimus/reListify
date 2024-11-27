@@ -29,9 +29,11 @@ export const getListingDetails = (listings: Listing[]): GSListingDataObj[] => {
       agentName: 'No data found',
       agentPhoneNumber: 'No data found',
       askingPrice: listing.price,
-      baths: home_data.bathrooms.toString(),
-      beds: home_data.bedrooms.toString(),
-      daysOnMarket: home_data.daysOnZillow.toString(),
+      baths: home_data.bathrooms ? home_data.bathrooms.toString() : '',
+      beds: home_data.bedrooms ? home_data.bedrooms.toString() : '',
+      daysOnMarket: home_data.daysOnZillow
+        ? home_data.daysOnZillow.toString()
+        : '',
       listingLink: listing.detailUrl,
       mls: 'No data found',
       offerPrice: (listing.unformattedPrice * 0.7).toLocaleString('en-US', {
@@ -39,7 +41,7 @@ export const getListingDetails = (listings: Listing[]): GSListingDataObj[] => {
         currency: 'USD',
         maximumFractionDigits: 0,
       }),
-      sqft: listing.area.toString(),
+      sqft: listing.area ? listing.area.toString() : '',
       zip: listing.addressZipcode,
       zpid: listing.zpid,
     };

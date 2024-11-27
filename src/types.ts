@@ -12,31 +12,6 @@ export interface ListingsApiResponse {
   message: string;
 }
 
-export interface PriceChunkingApiResponse {
-  is_success: boolean;
-  data: {
-    task_id: string;
-  };
-  message: string;
-}
-
-export interface PriceChunkResponse {
-  is_success: boolean;
-  data: {
-    result: {
-      chunks: Chunk[];
-    };
-    task_status: string;
-  };
-  message: string;
-}
-
-type Chunk = {
-  chunkMinPrice: number;
-  chunkMaxPrice: number;
-  chunkedlistSize: number;
-};
-
 interface ResponseData {
   user: UserData;
   mapState: MapState;

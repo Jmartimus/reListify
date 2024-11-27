@@ -15,100 +15,9 @@ import {
   ListingsAPIdelayTime,
   PROPERTY_ENDPOINT,
   STATUS_MESSAGES,
-  ZILLOW_SEARCH_URL,
 } from '../../src/constants';
 import { updateZillowSearchUrl } from './utils';
-// import {
-//   createPriceChunks,
-//   getListings,
-//   getPriceChunkList,
-//   updateZillowSearchUrl,
-//   waitForTaskCompletion,
-// } from './utils';
 
-// /**
-//  * Fetches all listings for a given Zillow search URL by utilizing price chunking and pagination.
-//  * The function creates price chunks, waits for the task to complete, retrieves the price chunk list, and
-//  * iterates through each price range to get listings from all pages.
-//  *
-//  * @param {string} apiKey - Your API key for the Zillow API.
-//  * @param {string} zillowSearchUrl - The URL for the Zillow search with searchQueryState parameters.
-//  * @returns {Promise<object[]>} - A promise that resolves to an array containing all listings from all price chunks and pages.
-//  * @throws {Error} - Throws an error if any step in the process fails.
-//  */
-// async function fetchAllListings() {
-//   try {
-//     // Step 1: Create price chunks
-//     console.log('Creating price chunks...');
-//     const priceChunkTask = await createPriceChunks();
-
-//     if (!priceChunkTask.is_success) {
-//       throw new Error(
-//         `Failed to create price chunks: ${priceChunkTask.message}`
-//       );
-//     }
-
-//     const taskId = priceChunkTask.data.task_id;
-//     console.log(`Price chunks task created. Task ID: ${taskId}`);
-
-//     // Step 2: Wait for task completion
-//     await waitForTaskCompletion(taskId);
-
-//     // Step 3: Get the price chunk list
-//     const priceChunkListData = await getPriceChunkList(taskId);
-
-//     if (!priceChunkListData.is_success) {
-//       throw new Error(
-//         `Failed to fetch price chunk list: ${priceChunkListData.message}`
-//       );
-//     }
-
-//     const priceChunks = priceChunkListData.data.result.chunks;
-//     console.log(`Received ${priceChunks.length} price chunks.`);
-
-//     let allListings = [];
-
-//     // Step 4: Iterate through all price ranges and fetch listings
-//     for (const priceRange of priceChunks) {
-//       const { chunkMinPrice, chunkMaxPrice } = priceRange;
-
-//       // Update the search URL to reflect the current price range
-//       let currentPage = 1;
-//       let hasMorePages = true;
-
-//       console.log(
-//         `Fetching listings for price range: $${chunkMinPrice} - $${chunkMaxPrice}`
-//       );
-
-//       while (hasMorePages) {
-//         const updatedSearchUrl = updateZillowSearchUrl(currentPage);
-//         const listingsData = await getListings(updatedSearchUrl);
-
-//         if (!listingsData.is_success) {
-//           console.error(`Error fetching listings: ${listingsData.message}`);
-//           break; // Exit the loop if there's an error
-//         }
-
-//         const listings = listingsData.data.cat1.searchResults.listResults;
-//         allListings = allListings.concat(listings);
-
-//         // Check if there are more pages to fetch
-//         hasMorePages =
-//           listingsData.data.cat1.searchResults.pagination.morePages;
-//         currentPage++;
-//       }
-//     }
-
-//     console.log(`Fetched a total of ${allListings.length} listings.`);
-//     return allListings;
-//   } catch (error) {
-//     console.error(
-//       'An error occurred while fetching all listings:',
-//       error.message
-//     );
-//     throw error;
-//   }
-// }
 /**
  * Fetches home listings from Zillow based on a search query.
  *
@@ -121,7 +30,6 @@ export const getListings = async (
   zillowSearchUrl: string,
   pageNumber: number
 ): Promise<ListingsApiResponse | null> => {
-  ws.send(STATUS_MESSAGES.STEP_2); // Send step 2 status
   try {
     // Figure out how much time I need between searches - I am thinking it may need to be a full 2 seconds
     await delay(ListingsAPIdelayTime);
@@ -177,69 +85,6 @@ export const getListings = async (
   }
 };
 
-// /**
-//  * Fetches home listings from Zillow based on a search query.
-//  *
-//  * @param {WebSocket} ws - The WebSocket connection to send updates to.
-//  * @returns {Promise<Listing[] | null>} - A promise that resolves to an object containing an array of listings, or null if there was an error.
-//  */
-// export const getListings = async (
-//   ws: WebSocket,
-//   zillowSearchUrl: string
-// ): Promise<Listing[] | null> => {
-//   ws.send(STATUS_MESSAGES.STEP_2);
-//   // Get listings
-//   // Update page
-//   // Get listings
-//   // Rinse and repeat until we have all the listings.
-
-//   try {
-//     const response = await axios.get<ListingsApiResponse>(
-//       `${BASE_URL}${LISTINGS_ENDPOINT}`,
-//       {
-//         params: {
-//           api_key: API_KEY,
-//           url: zillowSearchUrl,
-//         },
-//       }
-//     );
-
-//     const responseContent = response.data;
-
-//     if (responseContent.is_success) {
-//       const listings = responseContent.data.cat1.searchResults.listResults;
-
-//       ws.send(`Successfully retrieved ${listings.length} listings from Zillow`);
-//       return listings;
-//     } else {
-//       const errorMessage = `Error fetching data: ${responseContent.message}`;
-//       console.error(errorMessage);
-//       ws.send(errorMessage); // Send error message via WebSocket
-//       return null;
-//     }
-//   } catch (error) {
-//     const errorMessage = `Error fetching data: ${error}`;
-//     console.error(errorMessage);
-
-//     if (axios.isAxiosError(error)) {
-//       if (error.response) {
-//         // Server responded with a status other than 2xx
-//         ws.send(
-//           `Error: Server responded with status ${error.response.status} - ${error.response.statusText}`
-//         );
-//       } else if (error.request) {
-//         ws.send('Error: No response received from server.');
-//       } else {
-//         ws.send('Error: Request setup failed.');
-//       }
-//     } else {
-//       ws.send(errorMessage);
-//     }
-
-//     return null;
-//   }
-// };
-
 /**
  * Fetches all listings for a given Zillow search URL by paginating through each page.
  *
@@ -254,6 +99,7 @@ export const fetchAllListings = async (ws: WebSocket) => {
     let currentPage = 1;
     let totalPages = 1; // Default, will update after first request
 
+    ws.send(STATUS_MESSAGES.STEP_2); // Send step 2 status
     // Loop through pages until we fetch all pages
     while (currentPage <= totalPages) {
       // Update the URL to reflect the current page number
@@ -274,6 +120,7 @@ export const fetchAllListings = async (ws: WebSocket) => {
       // Update totalPages based on the data received
       totalPages = listingsData.data.cat1.searchList.totalPages || 1;
       console.log(`Current page: ${currentPage}, Total pages: ${totalPages}`);
+      ws.send(`Pulling listings from page ${currentPage} of ${totalPages}.`);
 
       currentPage++; // Increment the page number for the next iteration
     }
@@ -298,6 +145,7 @@ export const updateListingsWithAdditionalData = async (
   ws: WebSocket
 ): Promise<GSListingDataObj[]> => {
   const updatedListings: GSListingDataObj[] = [];
+  let count = 1;
 
   // Iterate over each listing and fetch additional data with a delay
   for (const listing of listings) {
@@ -306,7 +154,11 @@ export const updateListingsWithAdditionalData = async (
       console.log('Updating the following listing:', {
         address: listing.address,
       });
-      ws.send(`Updating the following listing: ${listing.address}`);
+      ws.send(
+        `Updating the following listing: ${
+          listing.address
+        }, ${count} of ${listings.length.toString()}.`
+      );
 
       const zpid = Number(listing.zpid); // Convert zpid to a number
 
@@ -325,12 +177,14 @@ export const updateListingsWithAdditionalData = async (
       updatedListings.push({
         ...listing,
         agentEmail: additionalData.agentEmail ?? listing.agentEmail,
-        agentLicenseNumber: additionalData.agentLicenseNumber,
+        agentLicenseNumber:
+          additionalData.agentLicenseNumber ?? listing.agentLicenseNumber,
         agentName: additionalData.agentName,
         agentPhoneNumber:
           additionalData.agentPhoneNumber ?? additionalData.brokerPhoneNumber,
         mls: additionalData.mlsId,
       });
+      count = count + 1;
     } catch (error) {
       console.error(`Error fetching data for zpid ${listing.zpid}:`, error);
       updatedListings.push(listing); // Return the original listing if the API call fails

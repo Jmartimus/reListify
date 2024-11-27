@@ -9,16 +9,8 @@ import {
 import { delay, filterListingsByZipCode, getListingDetails } from './utils';
 import { delayTime, STATUS_MESSAGES } from '../../src/constants';
 import { spreadsheetId } from '../secrets';
-import {
-  fetchAllListings,
-  // fetchZillowListings,
-  updateListingsWithAdditionalData,
-} from '../api';
-import { MOCK_LISTING_1, MOCK_LISTING_2 } from './mockData';
-import { Listing } from '../../src/types';
-
-//TODO
-// 2. Look at price chunking to fix pagination and limited listings issue.
+import { fetchAllListings, updateListingsWithAdditionalData } from '../api';
+// import { MOCK_LISTING_1, MOCK_LISTING_2 } from './mockData';
 
 export const runListMaker = async (ws: WebSocket): Promise<void> => {
   try {
@@ -35,75 +27,65 @@ export const runListMaker = async (ws: WebSocket): Promise<void> => {
     }
 
     const { auth, sheets } = result;
+    const listings = await fetchAllListings(ws);
 
-    //Uncomment to use real zillow listings
-    // const listings = await fetchZillowListings(ws);
-    const allListings = await fetchAllListings(ws);
+    if (!listings) {
+      ws.send('No listings - closing down. Please try again later.');
+      return;
+    }
 
-    console.log({ allListingsLength: allListings.length });
-
-    // if (!listings) {
-    //   ws.send('No listings - closing down. Please try again later.');
-    //   return;
-    // }
-
-    // console.log({ listings });
-
-    //Uncomment to filter real zillow listings
     // Filtering listings by zip code
-    // ws.send(STATUS_MESSAGES.STEP_3);
-    // const filteredListingsByZip = filterListingsByZipCode(listings);
-    // await delay(delayTime); // Delay so user can see message update.
-
-    // const listings = MOCK_LISTING_2;
+    ws.send(STATUS_MESSAGES.STEP_3);
+    const filteredListingsByZip = filterListingsByZipCode(listings);
+    await delay(delayTime); // Delay so user can see message update.
 
     // Filter out new listings that already exist using ZPID numbers
-    // ws.send(STATUS_MESSAGES.STEP_4);
-    // const existingZPIDNumbers = await fetchZPIDNumbersFromSheet(
-    //   sheets,
-    //   spreadsheetId
-    // );
+    ws.send(STATUS_MESSAGES.STEP_4);
+    const existingZPIDNumbers = await fetchZPIDNumbersFromSheet(
+      sheets,
+      spreadsheetId
+    );
     // Grab the list of incomingZPIDs before filtering out listings that are incoming AND on the sheet.
-    // const incomingZPIDs = listings.map((listing) => listing.zpid);
-    // const filteredListings = listings.filter(
-    //   (listing) => !existingZPIDNumbers.includes(listing.zpid)
-    // );
-    // await delay(delayTime); // Delay so user can see message update.
+    const incomingZPIDs = filteredListingsByZip.map((listing) => listing.zpid);
+    const filteredListings = filteredListingsByZip.filter(
+      (listing) => !existingZPIDNumbers.includes(listing.zpid)
+    );
+    await delay(delayTime); // Delay so user can see message update.
 
     // Reformatting listings into the shape they need to be for the google sheet.
-    // ws.send(STATUS_MESSAGES.STEP_5);
-    // const formattedListings = getListingDetails(filteredListings);
-    // await delay(delayTime); // Delay so user can see message update.
+    ws.send(STATUS_MESSAGES.STEP_5);
+    const formattedListings = getListingDetails(filteredListings);
+    await delay(delayTime); // Delay so user can see message update.
 
     // Updating listings with additional data from /property endpoint
-    // ws.send(STATUS_MESSAGES.STEP_6);
+    ws.send(STATUS_MESSAGES.STEP_6);
     // const updatedListings = formattedListings;
-    // const updatedListings = await updateListingsWithAdditionalData(
-    //   formattedListings,
-    //   ws
-    // );
-    // await delay(delayTime); // Delay so user can see message update.
+    const updatedListings = await updateListingsWithAdditionalData(
+      formattedListings,
+      ws
+    );
+    await delay(delayTime); // Delay so user can see message update.
 
     // Remove outdated listings from google sheet.
-    // ws.send(STATUS_MESSAGES.STEP_7);
+    ws.send(STATUS_MESSAGES.STEP_7);
 
-    // await removeOldListingsFromSheet(
-    //   sheets,
-    //   spreadsheetId,
-    //   existingZPIDNumbers,
-    //   incomingZPIDs
-    // );
-    // await delay(delayTime); // Delay so user can see message update.
+    await removeOldListingsFromSheet(
+      sheets,
+      spreadsheetId,
+      existingZPIDNumbers,
+      incomingZPIDs
+    );
+    await delay(delayTime); // Delay so user can see message update.
 
     // // Update google sheet with listings
-    // ws.send(STATUS_MESSAGES.STEP_8);
-    // await updateGoogleSheet(auth, sheets, updatedListings);
-    // await delay(delayTime); // Delay so user can see message update.
+    ws.send(STATUS_MESSAGES.STEP_8);
+    await updateGoogleSheet(auth, sheets, updatedListings);
+    await delay(delayTime); // Delay so user can see message update.
 
-    // // Update timestamp in google sheet.
-    // ws.send(STATUS_MESSAGES.STEP_9);
-    // await updateTimestampInSheet(auth, sheets, spreadsheetId);
-    // await delay(delayTime); // Delay so user can see message update.
+    // Update timestamp in google sheet.
+    ws.send(STATUS_MESSAGES.STEP_9);
+    await updateTimestampInSheet(auth, sheets, spreadsheetId);
+    await delay(delayTime); // Delay so user can see message update.
   } catch (error) {
     if (error instanceof Error) {
       console.error('Error accessing or updating Google Sheet:', error);
