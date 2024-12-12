@@ -229,6 +229,8 @@ export interface GSListingDataObj {
   baths: string;
   beds: string;
   daysOnMarket: string;
+  highlight: boolean;
+  emptyRow?: boolean;
   listingLink: string;
   mls: string;
   offerPrice: string;

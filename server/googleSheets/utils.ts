@@ -1,54 +1,102 @@
 import { GSAuth, GSListingDataObj, type Sheets } from '../../src/types';
 import {
   postRange,
+  SHEET_NAME,
   startingRowIdx,
   timeStampCell,
   zpidColRange,
 } from '../../src/constants';
 import { spreadsheetId } from '../secrets';
-import { getFormattedTimestamp } from '../listMaker/utils';
+import { getFormattedTimestamp, parsePrice } from '../listMaker/utils';
 
 export async function updateGoogleSheet(
   auth: GSAuth,
   sheets: Sheets,
   updatedListings: GSListingDataObj[]
 ) {
-  // Convert the listing data into a format that can be appended to the Google Sheet (ORDER IS IMPORTANT HERE)
-  const values = updatedListings.map((listing) => [
-    listing.askingPrice,
-    listing.offerPrice,
-    listing.beds,
-    listing.baths,
-    listing.sqft,
-    listing.daysOnMarket,
-    `=HYPERLINK("${listing.listingLink}", "${listing.address}")`,
-    listing.zip,
-    listing.mls,
-    listing.agentName,
-    listing.agentPhoneNumber,
-    listing.agentEmail,
-    listing.agentLicenseNumber,
-    listing.zpid,
-  ]);
+  // Step 1: Sort the listings
+  const highlightedListings = updatedListings.filter(
+    (listing) => listing.highlight
+  );
+  const nonHighlightedListings = updatedListings.filter(
+    (listing) => !listing.highlight
+  );
+
+  // Sort both arrays by price in ascending order
+  highlightedListings.sort(
+    (a, b) => parsePrice(a.askingPrice) - parsePrice(b.askingPrice)
+  );
+  nonHighlightedListings.sort(
+    (a, b) => parsePrice(a.askingPrice) - parsePrice(b.askingPrice)
+  );
+
+  // Combine sorted arrays with highlighted listings at the top and an empty row in between
+  const sortedListings = [
+    ...highlightedListings,
+    {
+      address: '',
+      agentEmail: '',
+      agentLicenseNumber: '',
+      agentName: '',
+      agentPhoneNumber: '',
+      askingPrice: '',
+      baths: '',
+      beds: '',
+      daysOnMarket: '',
+      highlight: false,
+      emptyRow: true,
+      listingLink: '',
+      mls: '',
+      offerPrice: '',
+      sqft: '',
+      zip: '',
+      zpid: '',
+    }, // Placeholder for the empty row
+    ...nonHighlightedListings,
+  ];
+
+  // Step 2: Convert the listing data into a format for the Google Sheet (ORDER IS IMPORTANT HERE)
+  const values = sortedListings.map((listing) => {
+    if (listing.emptyRow) {
+      return ['', '', '', '', '', '', '', '', '', '', '', '', '', ''];
+    }
+    return [
+      listing.askingPrice,
+      listing.offerPrice,
+      listing.beds,
+      listing.baths,
+      listing.sqft,
+      listing.daysOnMarket,
+      `=HYPERLINK("${listing.listingLink}", "${listing.address}")`,
+      listing.zip,
+      listing.mls,
+      listing.agentName,
+      listing.agentPhoneNumber,
+      listing.agentEmail,
+      listing.agentLicenseNumber,
+      listing.zpid,
+    ];
+  });
 
   const requestBody = {
     values,
   };
 
   try {
-    // Call the Sheets API to update the sheet with new data
+    // Step 3: Append sorted rows to the sheet
     const response = await sheets.spreadsheets.values.append({
       auth,
       spreadsheetId,
       range: postRange,
-      valueInputOption: 'USER_ENTERED', // This ensures the formula is evaluated
-      insertDataOption: 'INSERT_ROWS', // Inserts new rows
+      valueInputOption: 'USER_ENTERED',
+      insertDataOption: 'INSERT_ROWS',
       requestBody,
     });
 
     console.log(`${response?.data?.updates?.updatedCells} cells updated.`);
   } catch (err) {
     console.error('The API returned an error: ' + err);
+    return;
   }
 }
 
@@ -167,3 +215,47 @@ export async function updateTimestampInSheet(
     console.error('Error updating Google Sheet: ', err);
   }
 }
+
+/**
+ * Retrieves the sheet ID for a given sheet name in a specified Google Spreadsheet.
+ *
+ * @param {Sheets} sheets - The authenticated Google Sheets instance.
+ * @returns {Promise<number>} - A promise that resolves to the sheet ID.
+ * @throws {Error} - Throws an error if the sheet ID cannot be retrieved.
+ */
+export const getSheetId = async (sheets: Sheets): Promise<number> => {
+  try {
+    const spreadsheet = await sheets.spreadsheets.get({
+      spreadsheetId,
+    });
+
+    // Check if the response data exists and has sheets
+    if (!spreadsheet.data || !spreadsheet.data.sheets) {
+      throw new Error('No sheets found in the spreadsheet.');
+    }
+
+    // Find the sheet with the matching title
+    const sheet = spreadsheet.data.sheets.find(
+      (sheet) => sheet.properties?.title === SHEET_NAME
+    );
+
+    // Check if the sheet was found
+    if (!sheet) {
+      throw new Error(`Sheet with name "${SHEET_NAME}" not found.`);
+    }
+
+    // Check if the sheetId is valid
+    if (
+      sheet.properties?.sheetId === undefined ||
+      sheet.properties?.sheetId === null
+    ) {
+      throw new Error(`Unable to retrieve sheet ID.`);
+    }
+
+    // Return the sheet ID
+    return sheet.properties.sheetId;
+  } catch (error: unknown) {
+    console.error('Error retrieving sheet ID:', error);
+    throw new Error(`Error retrieving sheet ID: ${(error as Error).message}`);
+  }
+};

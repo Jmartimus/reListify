@@ -11,6 +11,8 @@ import { delay } from '../listMaker/utils';
 import {
   APIdelayTime,
   BASE_URL,
+  EXCLUSIONARY_TERMS,
+  GOOD_DEAL_TERMS,
   LISTINGS_ENDPOINT,
   ListingsAPIdelayTime,
   PROPERTY_ENDPOINT,
@@ -134,7 +136,10 @@ export const fetchAllListings = async (ws: WebSocket) => {
 };
 
 /**
- * Updates a list of formatted listings by fetching additional data from an API for each listing's zpid.
+ * Updates a list of property listings by fetching additional data from an external API for each listing's zpid (Zillow Property ID).
+ *
+ * The function also filters out listings containing specific exclusionary keywords or phrases in their description.
+ * WebSocket messages are sent to provide real-time updates on the processing status.
  *
  * @param {GSListingDataObj[]} listings - A list of formatted listings to update.
  * @param {WebSocket} ws - The WebSocket connection to send updates to.
@@ -173,6 +178,34 @@ export const updateListingsWithAdditionalData = async (
       );
 
       const additionalData = response.data.data.attributionInfo;
+      const description = response.data.data.description?.toLowerCase() || '';
+
+      // Check if description contains any of the keywords
+      const containsKeywords = EXCLUSIONARY_TERMS.some((keyword) =>
+        description.includes(keyword.toLowerCase())
+      );
+
+      // Skip this listing if it contains any of the keywords
+      if (containsKeywords) {
+        console.log(
+          'Removing the following listing:',
+          {
+            address: listing.address,
+          },
+          'due to exclusionary keywords in description.'
+        );
+        ws.send(
+          `Removing the following listing: ${listing.address} due to exclusionary keywords in description.`
+        );
+        await delay(APIdelayTime);
+        count++;
+        continue;
+      }
+
+      // Check for inclusionary terms
+      const containsInclusionaryKeywords = GOOD_DEAL_TERMS.some((keyword) =>
+        description.includes(keyword.toLowerCase())
+      );
 
       updatedListings.push({
         ...listing,
@@ -183,11 +216,12 @@ export const updateListingsWithAdditionalData = async (
         agentPhoneNumber:
           additionalData.agentPhoneNumber ?? additionalData.brokerPhoneNumber,
         mls: additionalData.mlsId,
+        highlight: containsInclusionaryKeywords, // Flag if inclusionary terms are found
       });
       count = count + 1;
     } catch (error) {
       console.error(`Error fetching data for zpid ${listing.zpid}:`, error);
-      updatedListings.push(listing); // Return the original listing if the API call fails
+      updatedListings.push({ ...listing, highlight: false }); // Return the original listing if the API call fails
     }
   }
 

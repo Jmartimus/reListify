@@ -6,7 +6,12 @@ import {
   updateGoogleSheet,
   updateTimestampInSheet,
 } from '../googleSheets/utils';
-import { delay, filterListingsByZipCode, getListingDetails } from './utils';
+import {
+  delay,
+  filterListingsByDaysOnMarket,
+  filterListingsByZipCode,
+  getListingDetails,
+} from './utils';
 import { delayTime, STATUS_MESSAGES } from '../../src/constants';
 import { spreadsheetId } from '../secrets';
 import { fetchAllListings, updateListingsWithAdditionalData } from '../api';
@@ -39,26 +44,35 @@ export const runListMaker = async (ws: WebSocket): Promise<void> => {
     const filteredListingsByZip = filterListingsByZipCode(listings);
     await delay(delayTime); // Delay so user can see message update.
 
-    // Filter out new listings that already exist using ZPID numbers
+    // Filtering listings by days on market.
     ws.send(STATUS_MESSAGES.STEP_4);
+    const filteredListingsByDaysOnMarket = filterListingsByDaysOnMarket(
+      filteredListingsByZip
+    );
+    await delay(delayTime); // Delay so user can see message update.
+
+    // Filter out new listings that already exist using ZPID numbers
+    ws.send(STATUS_MESSAGES.STEP_5);
     const existingZPIDNumbers = await fetchZPIDNumbersFromSheet(
       sheets,
       spreadsheetId
     );
     // Grab the list of incomingZPIDs before filtering out listings that are incoming AND on the sheet.
-    const incomingZPIDs = filteredListingsByZip.map((listing) => listing.zpid);
-    const filteredListings = filteredListingsByZip.filter(
+    const incomingZPIDs = filteredListingsByDaysOnMarket.map(
+      (listing) => listing.zpid
+    );
+    const filteredListings = filteredListingsByDaysOnMarket.filter(
       (listing) => !existingZPIDNumbers.includes(listing.zpid)
     );
     await delay(delayTime); // Delay so user can see message update.
 
     // Reformatting listings into the shape they need to be for the google sheet.
-    ws.send(STATUS_MESSAGES.STEP_5);
+    ws.send(STATUS_MESSAGES.STEP_6);
     const formattedListings = getListingDetails(filteredListings);
     await delay(delayTime); // Delay so user can see message update.
 
     // Updating listings with additional data from /property endpoint
-    ws.send(STATUS_MESSAGES.STEP_6);
+    ws.send(STATUS_MESSAGES.STEP_7);
     // const updatedListings = formattedListings;
     const updatedListings = await updateListingsWithAdditionalData(
       formattedListings,
@@ -67,7 +81,7 @@ export const runListMaker = async (ws: WebSocket): Promise<void> => {
     await delay(delayTime); // Delay so user can see message update.
 
     // Remove outdated listings from google sheet.
-    ws.send(STATUS_MESSAGES.STEP_7);
+    ws.send(STATUS_MESSAGES.STEP_8);
 
     await removeOldListingsFromSheet(
       sheets,
@@ -77,13 +91,13 @@ export const runListMaker = async (ws: WebSocket): Promise<void> => {
     );
     await delay(delayTime); // Delay so user can see message update.
 
-    // // Update google sheet with listings
-    ws.send(STATUS_MESSAGES.STEP_8);
+    // Update google sheet with listings
+    ws.send(STATUS_MESSAGES.STEP_9);
     await updateGoogleSheet(auth, sheets, updatedListings);
     await delay(delayTime); // Delay so user can see message update.
 
     // Update timestamp in google sheet.
-    ws.send(STATUS_MESSAGES.STEP_9);
+    ws.send(STATUS_MESSAGES.STEP_10);
     await updateTimestampInSheet(auth, sheets, spreadsheetId);
     await delay(delayTime); // Delay so user can see message update.
   } catch (error) {

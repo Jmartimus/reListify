@@ -14,6 +14,21 @@ export const filterListingsByZipCode = (listings: Listing[]): Listing[] => {
 };
 
 /**
+ * Filters listings to only include those that have been on the market for more than 45 days.
+ *
+ * @param {Listing[]} listings - An array of listing objects.
+ * @returns {Listing[]} - A filtered array of listings that have been on the market for more than 45 days.
+ */
+export const filterListingsByDaysOnMarket = (
+  listings: Listing[]
+): Listing[] => {
+  return listings.filter((listing) => {
+    const daysOnMarket = listing.hdpData?.homeInfo?.daysOnZillow;
+    return daysOnMarket !== undefined && daysOnMarket > 45;
+  });
+};
+
+/**
  * Maps the listings array to an array of objects containing key details about each listing.
  *
  * @param {Listing[]} listings - An array of listing objects.
@@ -34,6 +49,7 @@ export const getListingDetails = (listings: Listing[]): GSListingDataObj[] => {
       daysOnMarket: home_data.daysOnZillow
         ? home_data.daysOnZillow.toString()
         : '',
+      highlight: false,
       listingLink: listing.detailUrl,
       mls: 'No data found',
       offerPrice: (listing.unformattedPrice * 0.7).toLocaleString('en-US', {
@@ -83,4 +99,15 @@ export const getFormattedTimestamp = (): string => {
   };
 
   return new Intl.DateTimeFormat('en-US', options).format(new Date());
+};
+
+/**
+ * Converts a price string in currency format (e.g., "$300,000") into a numerical value.
+ *
+ * @param {string} price - The price string to convert, expected in the format "$123,456".
+ * @returns {number} - The numerical representation of the price, with all non-numeric characters removed.
+ *
+ */
+export const parsePrice = (price: string): number => {
+  return parseFloat(price.replace(/[$,]/g, ''));
 };
