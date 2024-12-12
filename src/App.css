@@ -9,7 +9,7 @@ html {
   justify-content: center;
   height: 100vh;
   margin: 0;
-  background: no-repeat url('listify-background.jpg');
+  background: no-repeat url('/listify-background.jpg');
   background-size: cover;
   background-position: center;
   font-family: "JetBrains Mono", monospace;
